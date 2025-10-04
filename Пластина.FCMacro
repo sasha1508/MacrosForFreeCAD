@@ -1,0 +1,57 @@
+import FreeCAD as App
+import Part
+import Draft
+
+# Параметры пластины
+width = 100.0  # Ширина пластины
+height = 50.0  # Высота пластины
+thickness = 10.0  # Толщина пластины
+hole_diameter = 9.0  # Диаметр отверстий
+margin = 10.0  # Отступ отверстия от края
+
+# Создаем новый документ
+doc = App.newDocument("PlateWithHoles")
+
+# Создание базовой формы (прямоугольник)
+base_shape = Part.makePlane(width, height)
+
+# Центр пластины
+center_x = width / 2
+center_y = height / 2
+
+# Координаты центров отверстий
+holes_positions = [
+    (margin, margin),  # Верхний левый угол
+    (margin, height - margin),  # Верхний правый угол
+    (width - margin, margin),  # Нижний левый угол
+    (width - margin, height - margin)   # Нижний правый угол
+]
+
+# Создаем цилиндрические отверстия
+holes = []
+for pos in holes_positions:
+    hole = Part.makeCylinder(hole_diameter / 2, thickness,
+                             App.Vector(pos[0], pos[1], 0))
+    holes.append(hole)
+
+# Объединяем отверстия в одну форму
+combined_holes = Part.makeCompound(holes)
+
+# Создаем вырезанные отверстия в основании
+final_shape = base_shape.cut(combined_holes)
+
+# Экструзия основы (выдавливание)
+plate = final_shape.extrude(App.Vector(0, 0, thickness))
+
+# Добавляем тело в документ
+body = doc.addObject("Part::Feature", "PlateWithHoles")
+body.Shape = plate
+
+# Регенерируем документ
+doc.recompute()
+
+# Аксонометрический вид камеры
+Gui.activeDocument().activeView().viewAxometric()
+Gui.SendMsgToActiveView("ViewFit")
+
+print("Пластина с отверстиями создана успешно!")
